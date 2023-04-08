@@ -2,7 +2,10 @@ package com.binar.pixabayapp.ui
 
 import android.os.Bundle
 import android.view.Menu
+import android.view.MenuItem
+import android.view.ViewGroup
 import android.widget.SearchView
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -25,7 +28,7 @@ class MainActivity : AppCompatActivity() {
 
     private val adapter: PostAdapter by lazy {
         PostAdapter {
-
+            Toast.makeText(this, "this photo has: ${it.likes} likes", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -33,7 +36,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         initList()
+        initView()
         observeData()
+    }
+
+    private fun initView() {
+        binding.tvEmpty.text = getString(R.string.text_search_guide)
+        binding.tvEmpty.isVisible = true
     }
 
     private fun observeData() {
@@ -42,12 +51,14 @@ class MainActivity : AppCompatActivity() {
                 is Resource.Loading -> {
                     binding.pbPost.isVisible = true
                     binding.rvPost.isVisible = false
+                    binding.tvEmpty.isVisible = false
                     binding.tvError.isVisible = false
                 }
                 is Resource.Error -> {
                     adapter.clearItems()
                     binding.pbPost.isVisible = false
                     binding.rvPost.isVisible = false
+                    binding.tvEmpty.isVisible = false
                     binding.tvError.isVisible = true
                     it.exception?.message?.let { errorMessage ->
                         binding.tvError.text = errorMessage
@@ -57,13 +68,15 @@ class MainActivity : AppCompatActivity() {
                     adapter.clearItems()
                     binding.pbPost.isVisible = false
                     binding.rvPost.isVisible = false
-                    binding.tvError.isVisible = true
-                    binding.tvError.text = getString(R.string.text_empty_state)
+                    binding.tvError.isVisible = false
+                    binding.tvEmpty.isVisible = true
+                    binding.tvEmpty.text = getString(R.string.text_empty_state)
                 }
                 is Resource.Success -> {
                     it.payload?.posts?.let { data -> adapter.setItems(data) }
                     binding.pbPost.isVisible = false
                     binding.rvPost.isVisible = true
+                    binding.tvEmpty.isVisible = false
                     binding.tvError.isVisible = false
                 }
             }
@@ -80,8 +93,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_search, menu)
         val search = menu.findItem(R.id.menu_search_bar)
-        val searchView = search.actionView as SearchView
+        setupSearchView(search)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    private fun setupSearchView(search: MenuItem?) {
+        val searchView = search?.actionView as SearchView
         searchView.queryHint = getString(R.string.title_search)
+        searchView.maxWidth = Integer.MAX_VALUE
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 query?.let {
@@ -91,11 +110,16 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-
                 return true
             }
         })
-        return super.onCreateOptionsMenu(menu)
+        searchView.setOnCloseListener {
+            searchView.onActionViewCollapsed()
+            initView()
+            adapter.clearItems()
+            binding.rvPost.isVisible = false
+            true
+        }
     }
 
 }

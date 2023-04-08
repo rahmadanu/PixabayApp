@@ -2,5 +2,6 @@
     <string name="app_name">PixabayApp</string>
     <string name="title_search_bar">Search</string>
     <string name="text_empty_state">Search result not found</string>
+    <string name="text_search_guide">Search image by clicking search button at the top right corner</string>
     <string name="title_search">Search</string>
 </resources>
